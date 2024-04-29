@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>JSON to Kotlin Data Class Converter</title>
+    <style>
+        body {
+            padding-left: 6vw;
+            padding-right: 6vw;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #ced6ed;
+            background: linear-gradient(-45deg, #110000, #390663, #080048, #000618);
+            background-size: 200% 200%;
+            animation: gradient 10s ease infinite;
+            height: 100vh;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        h1, p, a {
+            text-align: center;
+            color:#ffffff;
+        }
+
+        #input,
+        #output {
+            width: 100%;
+            height: 150px;
+            background-color: rgba(255, 255, 255, 0.849)
+        }
+
+        #class-name {
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>JSON to Kotlin Data Class Converter</h1>
+
+    <label for="class-name">Main Data Class Name:</label>
+    <input type="text" id="class-name" placeholder="Enter the main class name">
+
+    <br><br>
+
+    <label for="input">Enter JSON:</label>
+    <textarea id="input" placeholder="Paste JSON response here"></textarea>
+
+    <br><br>
+
+    <label for="parcelize">Add @Parcelize annotation:</label>
+    <input type="checkbox" id="parcelize">
+
+    <br><br>
+
+    <button onclick="convertToKotlin()">Convert to Kotlin</button>
+
+    <br><br>
+
+    <label for="output">Kotlin Data Class:</label>
+    <textarea id="output" readonly></textarea>
+    <button onclick="copyToClipboard()">Copy to Clipboard</button>
+
+    <br><br>
+
+    <p>Created by Tomi Jokinen <a href="https://tjokinen.github.io" target="_blank">tjokinen.github.io</a></p>
+
+    <script>
+        function jsonToKotlin(json, className, addParcelize) {
+            const jsonObj = JSON.parse(json);
+            const classes = new Map();
+            generateClass(jsonObj, className, classes, addParcelize);
+            return Array.from(classes.values()).join("\n\n");
+        }
+
+        function generateClass(obj, className, classes, addParcelize) {
+            const fields = Object.entries(obj)
+                .map(([key, value]) => toKotlinField(key, value, classes, addParcelize))
+                .filter(Boolean)
+                .join(",\n    ");
+
+            const classContent = `data class ${className}(\n    ${fields}\n)` +
+                (addParcelize ? " : Parcelable" : "");
+
+            const classCode = addParcelize ? `@Parcelize\n${classContent}` : classContent;
+
+            classes.set(className, classCode);
+
+            traverseAndGenerateClasses(obj, classes, addParcelize);
+        }
+
+        function toKotlinField(key, value, classes, addParcelize) {
+            const type = toKotlinType(value, key, classes, addParcelize);
+
+            if ((type === "Any" || type === "Any?") && addParcelize) {
+                return `\/\/ val ${key}: ${type}`;
+            }
+
+            return `val ${key}: ${type}`;
+        }
+
+        function traverseAndGenerateClasses(obj, classes, addParcelize) {
+            for (const [key, value] of Object.entries(obj)) {
+                if (Array.isArray(value)) {
+                    if (value.length > 0 && typeof value[0] === "object") {
+                        const nestedClassName = capitalize(key);
+                        if (!classes.has(nestedClassName)) {
+                            generateClass(value[0], nestedClassName, classes, addParcelize);
+                        }
+                    }
+                } else if (typeof value === "object" && value !== null) {
+                    const nestedClassName = capitalize(key);
+                    if (!classes.has(nestedClassName)) {
+                        generateClass(value, nestedClassName, classes, addParcelize);
+                    }
+                }
+            }
+        }
+
+        function toKotlinType(value, key, classes, addParcelize) {
+            if (Array.isArray(value)) {
+                const elementType = value.length > 0 ? toKotlinType(value[0], key, classes, addParcelize) : "Any";
+                return `List<${elementType}>`;
+            }
+
+            switch (typeof value) {
+                case "string":
+                    return "String";
+                case "number":
+                    return Number.isInteger(value) ? "Int" : "Double";
+                case "boolean":
+                    return "Boolean";
+                case "object":
+                    if (value === null) return "Any?";
+                    const nestedClassName = capitalize(key);
+                    if (!classes.has(nestedClassName)) {
+                        generateClass(value, nestedClassName, classes, addParcelize);
+                    }
+                    return nestedClassName;
+                default:
+                    return "Any";
+            }
+        }
+
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function convertToKotlin() {
+            const jsonResponse = document.getElementById("input").value;
+            const mainClassName = document.getElementById("class-name").value || "Response";
+            const addParcelize = document.getElementById("parcelize").checked;
+
+            try {
+                const kotlinClasses = jsonToKotlin(jsonResponse, mainClassName, addParcelize);
+                document.getElementById("output").value = kotlinClasses;
+            } catch (e) {
+                document.getElementById("output").value = "Error: " + e.message;
+            }
+        }
+
+        function copyToClipboard() {
+            const output = document.getElementById("output").value;
+            navigator.clipboard.writeText(output)
+                .then(() => console.log("Copied to clipboard!"))
+                .catch(err => console.error("Failed to copy:", err));
+        }
+    </script>
+
+</body>
+
+</html>
