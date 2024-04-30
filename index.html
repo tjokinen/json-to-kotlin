@@ -29,16 +29,54 @@
             }
         }
 
-        h1, p, a {
+        h1,
+        p,
+        a {
             text-align: center;
-            color:#ffffff;
+            color: #ffffff;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
+
+            .column {
+                flex: 1;
+                padding: 10px;
+            }
+
+            .column-middle {
+                flex: 0.25;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #input,
+            #output {
+                height: 500px;
+            }
+        }
+
+        @media (max-width: 767px) {
+            #input,
+            #output {
+                height: 150px;
+            }
         }
 
         #input,
         #output {
+            resize: none;
             width: 100%;
-            height: 150px;
-            background-color: rgba(255, 255, 255, 0.849)
+            background-color: rgba(255, 255, 255, 0.849);
         }
 
         #class-name {
@@ -51,30 +89,35 @@
 
     <h1>JSON to Kotlin Data Class Converter</h1>
 
-    <label for="class-name">Main Data Class Name:</label>
-    <input type="text" id="class-name" placeholder="Enter the main class name">
+    <div class="container">
+        <div class="column">
+            <label for="class-name">Main Data Class Name:</label>
+            <input type="text" id="class-name" placeholder="Enter the main class name">
 
-    <br><br>
+            <br><br>
 
-    <label for="input">Enter JSON:</label>
-    <textarea id="input" placeholder="Paste JSON response here"></textarea>
+            <label for="input">Enter JSON:</label>
+            <textarea id="input" placeholder="Paste JSON response here"></textarea>
+        </div>
 
-    <br><br>
+        <div class="column column-middle">
+            <label for="parcelize">Add @Parcelize annotation:</label>
+            <input type="checkbox" id="parcelize">
 
-    <label for="parcelize">Add @Parcelize annotation:</label>
-    <input type="checkbox" id="parcelize">
+            <br><br>
 
-    <br><br>
+            <button onclick="convertToKotlin()">Convert to Kotlin</button>
+        </div>
 
-    <button onclick="convertToKotlin()">Convert to Kotlin</button>
+        <div class="column">
+            <label for="output">Kotlin Data Class:</label>
+            <textarea id="output" readonly></textarea>
 
-    <br><br>
+            <br><br>
 
-    <label for="output">Kotlin Data Class:</label>
-    <textarea id="output" readonly></textarea>
-    <button onclick="copyToClipboard()">Copy to Clipboard</button>
-
-    <br><br>
+            <button onclick="copyToClipboard()">Copy to Clipboard</button>
+        </div>
+    </div>
 
     <p>Created by Tomi Jokinen <a href="https://tjokinen.github.io" target="_blank">tjokinen.github.io</a></p>
 
